@@ -1,8 +1,9 @@
 
 class StatsManager {
+    
     constructor() {
         this.container = document.createElement('div');
-        this.container.style.cssText = 'position:fixed;top:0;left:0;cursor:pointer;opacity:0.9;z-index:10000';
+        this.container.style.cssText = 'position:fixed;top:0;left:100px;cursor:pointer;opacity:0.9;z-index:10000';
         this.container.addEventListener('click', (event) => {
             event.preventDefault();
             this.showPanel(++this.mode % this.container.children.length);
@@ -13,12 +14,18 @@ class StatsManager {
         this.prevTime = this.beginTime;
         this.frames = 0;
 
+        this.WriteData = false;
+        this.StartTime = 0;
+        this.Duration = 0;
+        
         this.fpsPanel = this.addPanel(new StatsManager.Panel('FPS', '#0ff', '#002'));
         this.msPanel = this.addPanel(new StatsManager.Panel('MS', '#0f0', '#020'));
-
+        
+        console.log(self.performance.memory)
         if (self.performance && self.performance.memory) {
             this.memPanel = this.addPanel(new StatsManager.Panel('MB', '#f08', '#201'));
         }
+        
 
         this.showPanel(0);
         this.data = {
@@ -45,6 +52,12 @@ class StatsManager {
     }
 
     end() {
+        const currentTime = Date.now();
+        if (this.WriteData && currentTime - this.StartTime >= this.Duration) { 
+            this.WriteData = false;
+            this.exportData();
+        }
+        
         this.frames++;
         const time = (performance || Date).now();
         const ms = time - this.beginTime;
@@ -59,19 +72,24 @@ class StatsManager {
             if (this.memPanel) {
                 const memory = performance.memory;
                 this.memPanel.update(memory.usedJSHeapSize / 1048576, memory.jsHeapSizeLimit / 1048576);
-                this.data.memory.push({
-                    time: (time - this.beginTime) / 1000,
-                    memory: memory.usedJSHeapSize / 1048576
-                });
+                
+                if(this.WriteData) {
+                    this.data.memory.push({
+                        time: (currentTime - this.StartTime) / 1000,
+                        memory: memory.usedJSHeapSize / 1048576
+                    });   
+                }
             }
-            this.data.fps.push({
-                time: (time - this.beginTime) / 1000,
-                fps: fps
-            });
-            this.data.ms.push({
-                time: (time - this.beginTime) / 1000,
-                ms: ms
-            });
+            if(this.WriteData) {
+                this.data.fps.push({
+                    time: (currentTime - this.StartTime) / 1000,
+                    fps: fps
+                });
+                this.data.ms.push({
+                    time: (currentTime - this.StartTime) / 1000,
+                    ms: ms
+                });   
+            }
         }
 
         return time;
@@ -82,30 +100,9 @@ class StatsManager {
     }
 
     startMonitoring(duration) {
-        const startTime = Date.now();
-        const animate = () => {
-            this.begin();
-            const currentTime = Date.now();
-            const deltaTime = currentTime - this.prevTime;
-            this.prevTime = currentTime;
-
-            if (deltaTime > 0) {
-                const fps = 1000 / deltaTime;
-                this.data.fps.push({
-                    time: (currentTime - startTime) / 1000, // Zeit in Sekunden
-                    fps: fps
-                });
-            }
-
-            this.end();
-
-            if (currentTime - startTime < duration) {
-                requestAnimationFrame(animate);
-            } else {
-                this.exportData();
-            }
-        };
-        requestAnimationFrame(animate);
+        this.StartTime = Date.now();
+        this.WriteData = true;
+        this.Duration = duration;
     }
 
     exportData() {

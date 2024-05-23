@@ -17,25 +17,27 @@ stats.showPanel( 0);
 document.body.appendChild( stats.dom );
 
 // own class
-// const statsManager = new StatsManager();
-// document.body.appendChild(statsManager.container);
-// statsManager.startMonitoring(10000)
+const statsManager = new StatsManager();
+document.body.appendChild(statsManager.container);
 async function main() {
     const url = "./splats/edit_zw1027_4.splat";
     await SPLAT.Loader.LoadAsync(url, scene, (progress) => (progressIndicator.value = progress * 100));
     progressDialog.close();
-
+    statsManager.startMonitoring(60000)
+    
     const handleResize = () => {
         renderer.setSize(canvas.clientWidth, canvas.clientHeight);
     };
 
     const frame = () => {
         stats.begin();
+        statsManager.begin();
         
         controls.update();
         renderer.render(scene, camera);
         
         stats.end();
+        statsManager.end();
         
         requestAnimationFrame(frame);
     };

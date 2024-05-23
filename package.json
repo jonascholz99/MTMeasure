@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@jonascholz/gaussian-splatting": "^1.0.15",
+    "gsplat": "^1.2.4",
     "stats.js": "^0.17.0"
   }
 }
